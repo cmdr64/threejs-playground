@@ -1,0 +1,230 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Cory Dambach - n-body Simulation</title>
+		<meta charset="utf-8">
+		<style type="text/css">
+			body {
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+                font-family:Monospace;
+                font-size:13px;
+                text-align:center;
+                font-weight: bold;
+				text-align:center;
+			}
+
+			a {
+				color:#0078ff;
+			}
+			
+            #info {
+				color		:#fff;
+                position	: absolute;
+                top			: 0px; width: 100%;
+                padding		: 5px;
+				z-index		: 100;
+				
+            }
+			
+		</style>
+	</head>
+	<body>
+		<script type="text/javascript" src="/Js/Three.js"></script>
+		<script type="text/javascript" src="/Js/ThreeExtras.js"></script>		
+		<script type="text/javascript">
+		
+			//if ( ! THREE.Supports.webgl )
+			//	THREE.Supports.addGetWebGLMessage();
+
+			var container, stats;
+			var camera, scene, renderer, particles, geometry, material, i, h, color, colors = [], sprite, size, x, y, z;
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			var clockInterval = 1000.0 / 60.0;
+			//				  1e12
+			var pxToMeter	= 1.0e12; //1 trillion meters per coordinate unit
+			var massConv	= 1.0e14; //100 trillion kilograms per mass unit
+			
+			//60 ticks = 1 second, so in one tick
+			//we want this much sim time to pass, one tick should be 1/60 of a day
+			var simTimePerTick	= 1440.0 * 8; //1 day per second of real time
+			var numParticles	= 100;  
+			
+			init();
+			setInterval( loop, clockInterval );
+			
+			function addParticle( px, py, pz, pmass, pvelocity ) {
+				var vector		= new THREE.Vector3( px, py, pz );
+								
+				var vertex		= new THREE.Vertex( vector )
+				vertex.force	= new THREE.Vector3( 0, 0, 0 );
+				vertex.velocity = pvelocity;
+				vertex.mass		= pmass;				
+				geometry.vertices.push( vertex );					
+				colors.push( new THREE.Color( 0xffffff ) );				
+				colors[ colors.length - 1 ].setHSV( (x+1000)/2000, 1.0, 1.0 );			
+			}
+			
+			function init() {
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+				camera = new THREE.Camera( 90, window.innerWidth / window.innerHeight, 1, 10000 );
+				/*camera = new THREE.QuakeCamera( 90, window.innerWidth / window.innerHeight, 1, 10000 );*/
+				camera.position.z = 2000;
+				scene = new THREE.Scene();
+				//scene.fog = new THREE.FogExp2( 0x000000, 0.0001 );				
+				geometry = new THREE.Geometry();				
+				sprite = THREE.ImageUtils.loadTexture( "ball.png" );				
+				
+				function addRandomParticles() {
+					for ( i = 0; i < numParticles; i++ ) {
+						x = 5000 * Math.random() - 2500;
+						y = 5000 * Math.random() - 2500;
+						z = 5000 * Math.random() - 2500;						
+						addParticle( x, y, z, Math.random() * 100, new THREE.Vector3(0,0,0) );															
+					}
+				}
+				addRandomParticles();
+				//addParticle( 100, 1500, 1500, 5.9742 * Math.pow( 10, 24 ), new THREE.Vector3(0,0,0) );
+				//addParticle( 100, 1500, 1500, 1.98892 * Math.pow( 10, 30 ), new THREE.Vector3(0,0,0) );			
+				geometry.colors = colors;
+			
+				material = new THREE.ParticleBasicMaterial( { size: 85, map: sprite, vertexColors: false } );
+				//material.color.setHSV( 1.0, 0.2, 0.8 );
+
+				particles = new THREE.ParticleSystem( geometry, material );
+				particles.sortParticles = true;				
+				particles.updateMatrix();
+				scene.addObject( particles );
+				
+				var light = new THREE.DirectionalLight( 0xffffff, 50, 2 );
+				light.position.x = 0;
+				light.position.y = 0;
+				light.position.z = 1;
+				scene.addLight( light );
+
+				renderer = new THREE.WebGLRenderer( { clearAlpha: 1 });
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+				document.addEventListener( 'touchmove', onDocumentTouchMove, false );				
+			}
+
+			function onDocumentMouseMove( event ) {
+				//mouseX = event.clientX - windowHalfX;
+				//mouseY = event.clientY - windowHalfY;				
+			}
+
+			function onDocumentTouchStart( event ) {
+
+				if ( event.touches.length == 1 ) {
+
+					event.preventDefault();
+
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					mouseY = event.touches[ 0 ].pageY - windowHalfY;
+					
+				}
+			}
+
+			function onDocumentTouchMove( event ) {
+
+				if ( event.touches.length == 1 ) {
+					event.preventDefault();
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					mouseY = event.touches[ 0 ].pageY - windowHalfY;
+				}
+			}
+
+			function loop() {
+				
+				var time = new Date().getTime() * 0.00005;
+				
+				SimulateGravity();
+				MoveParticles();
+				
+				camera.position.x += ( mouseX - camera.position.x ) * 0.05;
+				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
+
+				h = ( 360 * ( 1.0 + time ) % 360 ) / 360;
+				material.color.setHSV( h, 0.8, 1.0 );
+				
+				renderer.render( scene, camera );			
+			}
+			
+			function MoveParticles() {
+				//call this after all the forces have been calculated
+				for( var i = 0; i < geometry.vertices.length; i++ )
+				{	
+					var p = geometry.vertices[i]; //Particle			
+					var f = p.force;
+									
+					var deltaX = ( ( f.x / p.mass ) * simTimePerTick ) / 2;
+					var deltaY = ( ( f.y / p.mass ) * simTimePerTick ) / 2;
+					var deltaZ = ( ( f.z / p.mass ) * simTimePerTick ) / 2;
+					
+					p.velocity.x += deltaX;
+					p.velocity.y += deltaY;
+					p.velocity.z += deltaZ;
+					
+					p.position.x += p.velocity.x * simTimePerTick;
+					p.position.y += p.velocity.y * simTimePerTick;
+					p.position.z += p.velocity.z * simTimePerTick;
+					
+					p.force = new THREE.Vector3(0,0,0);
+				}
+			}
+							
+			function SimulateGravity()
+			{
+				var optimizer = {};
+				for( var i = 0; i < geometry.vertices.length; i++ ) {
+					var a = geometry.vertices[i]; //Particle
+					for (var j = 0; j < geometry.vertices.length; j++ )
+					{
+						var b = geometry.vertices[j];						
+						if (a != b) {
+							Gravity( a, b );													
+						}
+					}
+				}
+			}			
+			
+			//var GRAV = 0.00000006672;
+			function Gravity(a,  b)
+			{
+				var GRAV			= 0.00000006672;
+				var diffAB			= new THREE.Vector3 ( 0, 0, 0 );				
+				
+				//WARNING: converting geometry distances to physics distances
+				var distSquared		= diffAB.sub( a.position, b.position ).lengthSq() * pxToMeter;
+				if( distSquared < 1.0e18) {
+					return;
+				}
+				var top				= new THREE.Vector3 ( 0, 0, 0 ); 
+				var bottom			= new THREE.Vector3 ( 0, 0, 0 );
+				top.sub ( b.position, a.position );				
+				
+				var len				= bottom.sub( b.position, a.position ).length();
+				var unitVector		= top.divideScalar( len );
+				var combinedMass	= (a.mass * b.mass) * massConv;				
+				var F = unitVector.multiplyScalar( (-GRAV) * ( (combinedMass) / distSquared ) );				
+				b.force.addSelf( F );				
+			}
+			
+			/* constructor */ function Subspace()
+			{
+				this.subspaces = [];				
+				this.add = function ( subspace ) {
+					subspaces.push( subspace );
+				}
+			}
+		</script>
+	</body>
+</html>

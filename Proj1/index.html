@@ -1,0 +1,108 @@
+<!DOCTYPE HTML>
+<!-- html5 goodness -->
+<html>
+    <head>
+        <title>Cory's 3D Stuff</title>
+        <!-- does the short form work? -->
+        <script src="three.js" ></script>
+        <style>
+            body   { margin : 0;     }
+            canvas { display: block; }
+        </style>
+    </head>
+    <body>
+        <script>
+           function SetupCameraAndRenderer() {
+                var cam   = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000.0 );
+                var webgl = new THREE.WebGLRenderer( { antialias: true } );
+                webgl.setSize( window.innerWidth, window.innerHeight );
+                document.body.appendChild( webgl.domElement );
+                return [cam, webgl];
+            }
+
+            function SetupLighting( scene ) {
+                var color     = 0xFFFFFF;
+                var intensity = 1;
+                var light     = new THREE.DirectionalLight( color, intensity );
+                light.position.set( -1, 2, 4 );
+                scene.add( light );
+                return light;
+            }
+
+            //generate a point for my simulation
+            function GenSphere( x, y, z ) {
+                var geo        = new THREE.SphereGeometry   ( 0.05, 16, 16        );
+                var mat        = new THREE.MeshPhongMaterial( { color: 0xAAAAFF } ); //create a material to color it with
+                var pnt        = new THREE.Mesh             ( geo, mat            ); //box geometry with material texture
+                pnt.position.x = x;
+                pnt.position.y = y;
+                pnt.position.z = z;
+                return pnt;
+            }
+
+            //generate a point for my simulation
+            function GenBox( x, y, z ) {
+                var geo        = new THREE.BoxGeometry      ( 0.1, 0.1, 0.1 );
+                var mat        = new THREE.MeshPhongMaterial( { color: 0xAAAAFF } ); //create a material to color it with
+                var pnt        = new THREE.Mesh             ( geo, mat            ); //box geometry with material texture
+                pnt.position.x = x;
+                pnt.position.y = y;
+                pnt.position.z = z;
+                return pnt;
+            }
+
+            function CreateSpheres( scene ) {
+                var ps = [];
+                for( var i = 0; i < 256; i++ ) {
+                    var x    = Math.random() * -10.0;
+                    var y    = Math.random() * -10.0;
+                    var z    = Math.random() * -20.0;
+                    var cube = GenSphere( x, y, z );
+                    scene.add( cube );
+                    ps.push( cube );
+                }
+                return ps;
+            }
+
+            function CreateBoxes( scene ) {
+                var ps = [];
+                for( var i = 0; i < 256; i++ ) {
+                    var x    = Math.random() * -10.0;
+                    var y    = Math.random() * -10.0;
+                    var z    = Math.random() * -20.0;
+                    var cube = GenBox( x, y, z );
+                    scene.add( cube );
+                    ps.push( cube );
+                }
+                return ps;
+            }
+
+            function Sim( ps, n ) {
+                for( var i = 0; i < ps.length; i++ ) {
+                    var p = ps[i];
+                    p.position.z += Math.sin( p.position.x * n );
+                }
+            }
+
+            var scene        = new THREE.Scene();
+            scene.background = new THREE.Color( 0xFFFFFF );
+            var light        = SetupLighting( scene );
+            var [cam, webgl] = SetupCameraAndRenderer();
+            var ss           = CreateSpheres( scene );
+            var bs           = CreateBoxes  ( scene );
+            cam.position.z   = 10;
+            cam.position.x   = -3.5;
+            cam.position.y   = -3.5;
+            
+            var i = 0;
+            function animate() {
+                requestAnimationFrame( animate );
+                //cam.position.z -= Math.sin( i += 0.1 );
+                Sim( ss, i += 0.05 );
+                Sim( bs, i );
+                webgl.render( scene, cam );
+            }
+            animate();
+        </script>
+    </body>
+</html>

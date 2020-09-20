@@ -1,0 +1,186 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Simple Point Simulation</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" />
+		<style type="text/css">
+			body {
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+				color: #fff;
+			}
+			
+			div {
+				
+			}
+
+			a {
+				color:#0078ff;
+			}
+		</style>
+	</head>	
+	<body>
+		<h1>N-Body Gravity Simulation</h1>
+        <script type="text/javascript" src="/Js/Three.js"></script>
+		<script type="text/javascript" src="/Js/RequestAnimationFrame.js"></script>
+		<script type="text/javascript">
+
+			var container, camera, scene, renderer, group, particle;
+			var mouseX = 0, mouseY = 0;
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			lines = [] //hold the last 50 lines positions for each particle, this will get very large very quickly and will increase the rendering complexity.  There must be a better way...
+			lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 1, linewidth: 3 } );
+			init();
+			animate();
+			
+			function onKeyPress( ev ) {			 
+				var keys = "wasd"; //going to do indexof on this to get the right vector
+				var dirs = [
+					new THREE.Vector3(0, 0, -1), //w
+					new THREE.Vector3(-1, 0, 0), //a
+					new THREE.Vector3(0, 0, 1), //s
+					new THREE.Vector3(1, 0, 0), //d
+				];
+				i = keys.indexOf( String.fromCharCode( ev.charCode ) );
+				if ( i != -1 ) {
+					vec = dirs[i];
+					camera.position.addSelf( vec.multiplyScalar(50) )					
+				}
+			}
+
+			function init() {
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+				camera = new THREE.Camera( 75, window.innerWidth / window.innerHeight, 1, 3000 );
+				camera.position.z = 1000;
+				scene = new THREE.Scene();
+
+				var PI2 = Math.PI * 2;
+				var program = function ( context ) {
+					context.beginPath();
+					context.arc( 0, 0, .7, 0, PI2, true );
+					context.closePath();
+					context.fill();
+				}
+
+				group = new THREE.Object3D();
+				scene.addObject( group );
+				numParticles = parseInt( prompt("Number of particles?") )
+								
+				for ( var i = 0; i < numParticles; i++ ) {
+					particle = new THREE.Particle( new THREE.ParticleCanvasMaterial( { color: 0xffffff, program: program } ) );
+					particle.position.x = Math.random() * 2000 - 1000;
+					particle.position.y = Math.random() * 2000 - 1000;
+					particle.position.z = 0;
+					particle.force = new THREE.Vector3( 0, 0, 0 );
+					particle.mass = Math.random() * 10000;
+					particle.scale.x = particle.scale.y = Math.random() * 10 + 5;
+					group.addChild( particle );
+				}
+
+				renderer = new THREE.CanvasRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+				document.addEventListener( 'keypress', onKeyPress, false );
+			}
+
+			function onDocumentMouseMove( event ) {
+				mouseX = event.clientX - windowHalfX;
+				mouseY = event.clientY - windowHalfY;
+			}
+			function onDocumentTouchStart( event ) {
+				if ( event.touches.length == 1 ) {
+					event.preventDefault();
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					mouseY = event.touches[ 0 ].pageY - windowHalfY;
+				}
+			}
+			function onDocumentTouchMove( event ) {
+				if ( event.touches.length == 1 ) {
+					event.preventDefault();
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					mouseY = event.touches[ 0 ].pageY - windowHalfY;
+				}
+			}
+
+			function animate() {				
+				requestAnimationFrame( animate );
+				render();				
+			}
+
+			function render() {				
+				SimulateGravity();
+				MoveParticles();
+				//camera.position.x += ( mouseX - camera.position.x ) * 0.05;
+				//camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
+				renderer.render( scene, camera );
+			}
+			
+			function MoveParticles() { //call this after all the forces have been calculated				
+				for( var i = 0; i < group.children.length; i++ )
+				{	
+					var p = group.children[i]; //Particle			
+					var v = p.force;
+					var oldPos = [p.position.x,p.position.y,p.position.z];
+					
+					/*var geometry = new THREE.Geometry();
+					line = new THREE.Line( geometry, material, THREE.LinePieces );
+					line.scale.x = line.scale.y = line.scale.z = p[ 0 ];
+					line.originalScale = p[ 0 ];
+					line.rotation.y = Math.random() * Math.PI;
+					line.updateMatrix();
+					scene.addObject( line );*/
+									
+					var deltaX = ( v.x * ( 10 ) );
+					var deltaY = ( v.y * ( 10 ) );
+					var deltaZ = ( v.z * ( 10 ) );
+					
+					p.position.x += deltaX;
+					p.position.y += deltaY;				
+					p.position.z += deltaZ;								
+				}
+			}
+			
+			function SimulateGravity() {
+				for( var i = 0; i < group.children.length; i++ ) {
+					var a = group.children[i]; //Particle								
+					for (var j = 0; j < group.children.length; j++) {
+						var b = group.children[j];						
+						if (a != b)
+							Gravity(a, b);						
+					}
+				}			
+			}
+			
+			var GRAV = 0.00000006672;
+			function Gravity( a,  b ) {
+				var GRAV			= 0.00000006672;
+				var diffAB			= new THREE.Vector3 ( 0, 0, 0 );				
+				var distSquared		= diffAB.sub( a.position, b.position ).length();
+								
+				/*if( distSquared < 1000 ) { //simple optimization for certain cases, not in use atm
+					return;
+				}*/
+				
+				var unitVector		= new THREE.Vector3 ( 0, 0, 0 );
+				var top				= new THREE.Vector3 ( 0, 0, 0 ); 
+				var bottom			= new THREE.Vector3 ( 0, 0, 0 );
+				top.sub( b.position, a.position );
+				var len		= bottom.sub( b.position, a.position ).length();
+				unitVector = top.divideScalar( len );
+									
+				var	F = new THREE.Vector3( 0, 0, 0 );
+				F = unitVector.multiplyScalar( (-GRAV) * ((a.mass * b.mass) / distSquared ) );				
+				b.force.addSelf( F );
+			}		
+
+		</script>			
+	</body>
+</html>
