@@ -1,0 +1,29 @@
+﻿<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Cory's 3D Unit Tests</title> 
+        <!-- the short form does not work -->
+        <script src="three.js" ></script>
+        <style>
+
+            body   { margin     : 0; 
+                font-family: "Consolas";
+                font-size  : 8pt;
+            }
+            canvas { display    : block; }
+            div    { display    : none;  }
+        </style>
+    </head>
+    <body>
+    <script>
+        function Test1() {
+            let v1 = new THREE.Vector3( 4, 2, 2 );
+            let v2 = new THREE.Vector3( 2, 2, 2 );
+            document.writeln( v1.distanceTo( v2 ) );
+
+        }
+        Test1();
+
+    </script>
+    </body>
+</html>

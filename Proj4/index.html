@@ -1,0 +1,24 @@
+﻿<!DOCTYPE HTML>
+<!-- html5 goodness -->
+<html>
+    <head>
+        <title>Cory's 3D Stuff</title>
+        <!-- does the short form work? -->
+        <script src="three.js" ></script>
+        <style>
+            body   { margin : 0; 
+                     font-family: "Consolas";
+                     font-size: 8pt; }
+            canvas { display: block; }
+            div { display: none; }
+        </style>
+    </head>
+    <body>
+    <script>
+        let v1 = new THREE.Vector3( 0, 0, 0 );
+        let v2 = new THREE.Vector3( 1, 1, 1 );
+        document.writeln( v1.distanceTo( v2 ) );
+
+    </script>
+    </body>
+</html>

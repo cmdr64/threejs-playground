@@ -15,14 +15,6 @@
     </head>
     <body>
     <script>
-        let raycaster = new THREE.Raycaster();
-        let mouse     = new THREE.Vector2();
-        
-        function OnMouseMove( event ) {
-            mouse.x =   ( event.clientX / window.innerWidth  ) * 2 - 1;
-            mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-        }
-
         function SetupCameraAndRenderer() {
             let cam   = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000.0 );
             let webgl = new THREE.WebGLRenderer( { antialias: true } );
@@ -42,19 +34,8 @@
 
         //generate a point for my simulation
         function GenSphere( x, y, z ) {
-            let geo        = new THREE.SphereGeometry   ( 0.05, 16, 16        );
-            let mat        = new THREE.MeshPhongMaterial( { color: 0xAAAAFF } ); //create a material to color it with
-            let pnt        = new THREE.Mesh             ( geo, mat            ); //box geometry with material texture
-            pnt.position.x = x;
-            pnt.position.y = y;
-            pnt.position.z = z;
-            return pnt;
-        }
-
-        //generate a point for my simulation
-        function GenBox( x, y, z ) {
-            let geo        = new THREE.BoxGeometry      ( 0.1, 0.1, 0.1 );
-            let mat        = new THREE.MeshPhongMaterial( { color: 0xAAAAFF } ); //create a material to color it with
+            let geo        = new THREE.SphereGeometry   ( 0.5, 16, 16         );
+            let mat        = new THREE.MeshPhongMaterial( { color: 0xAAAAAA } ); //create a material to color it with
             let pnt        = new THREE.Mesh             ( geo, mat            ); //box geometry with material texture
             pnt.position.x = x;
             pnt.position.y = y;
@@ -63,11 +44,11 @@
         }
 
         function CreateSpheres( scene ) {
-            var ps = [];
-            for( let i = 0; i < 1; i++ ) {
-                let x    = (Math.random() * 10.0) - 5;
-                let y    = (Math.random() * 10.0) - 5;
-                let z    = 0; //(Math.random() * 10.0) - 5;
+            let ps = [];
+            for( let i = 0; i < 200; i++ ) {
+                let x    = -100 + i;
+                let y    = 0;
+                let z    = 0;
                 let cube = GenSphere( x, y, z );
                 scene.add( cube );
                 ps.push( cube );
@@ -79,15 +60,11 @@
             return flt.toFixed( 6 );
         }
 
-        function Sim( ps, origin ) {
-            cam.position.x = mouse.x;
-            cam.position.y = mouse.y;
+        function Sim( ps, j ) {
             for( let i = 0; i < ps.length; i++ ) {
-                let p     = ps[i];
-                let pPos2 = new THREE.Vector2( p.position.x, p.position.y );
-                let dist  = pPos2.distanceTo( new THREE.Vector2( cam.position.x, cam.position.y ) );
-                var color = new THREE.Color( dist * 10, dist * 10, dist * 10 );
-                //p.material.color.set( color );
+                let p = ps[i];
+                p.position.y = 3 * Math.sin(p.position.x + j );
+                p.position.z = Math.cos(p.position.x + j );
             }
         }
 
@@ -99,22 +76,17 @@
         let ss           = CreateSpheres( scene );
         cam.position.x   = 0;
         cam.position.y   = 0;
-        cam.position.z   = 5;
-            
-        var i = 0;
+        cam.position.z   = 50;
+        let i = 0;
         function animate() {
             requestAnimationFrame( animate );
-            raycaster.setFromCamera( mouse, cam );
-            var intersects = raycaster.intersectObjects( scene.children );
-            for ( var j = 0; j < intersects.length; j++ ) {
-                intersects[ j ].object.material.color.set( 0xff0000 );
-            }
-            Sim( ss, cam.position );
+            Sim( ss, i += 0.01 );
+            //cam.position.x += 1;
+            //cam.position.y += 1;
+            cam.rotate
             webgl.render( scene, cam );
         }
         animate();
-        window.addEventListener( 'mousemove', OnMouseMove, false );
-
     </script>
     </body>
 </html>
